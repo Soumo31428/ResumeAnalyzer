@@ -1,13 +1,9 @@
-pdfminer3
-pyresparser
+numpy>=1.23.0
+pdfminer3>=2018.12.3.0
 streamlit
 pandas
-pafy
 plotly
-pymysql
 streamlit-tags
 Pillow
-youtube-dl
 nltk
-pdfminer3
-spacy==2.3.5
+spacy>=3.4.0,<3.7.0

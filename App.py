@@ -2,7 +2,12 @@ import streamlit as st
 import nltk
 import spacy
 nltk.download('stopwords')
-spacy.load('en_core_web_sm')
+# Load spacy model with error handling
+try:
+    nlp = spacy.load('en_core_web_sm')
+except OSError:
+    st.error("spaCy English model not found. Please run: python -m spacy download en_core_web_sm")
+    st.stop()
 
 import pandas as pd
 import base64, random
@@ -16,15 +21,102 @@ from pdfminer3.converter import TextConverter
 import io, random
 from streamlit_tags import st_tags
 from PIL import Image
-import pymysql
+import sqlite3
 from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos, interview_videos
-import pafy
 import plotly.express as px
-import youtube_dl
 
-def fetch_yt_video(link):
-    video = pafy.new(link)
-    return video.title
+def custom_resume_parser(file_path):
+    """
+    Custom resume parser to extract basic information without pyresparser issues
+    """
+    import re
+    
+    # Extract text from PDF
+    resume_text = pdf_reader(file_path)
+    
+    # Initialize result dictionary
+    result = {
+        'name': None,
+        'email': None,
+        'mobile_number': None,
+        'skills': [],
+        'no_of_pages': 1
+    }
+    
+    # Extract email
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    emails = re.findall(email_pattern, resume_text)
+    if emails:
+        result['email'] = emails[0]
+    
+    # Extract phone numbers
+    phone_pattern = r'(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
+    phones = re.findall(phone_pattern, resume_text)
+    if phones:
+        result['mobile_number'] = ''.join(phones[0]) if isinstance(phones[0], tuple) else phones[0]
+    
+    # Extract name (assume first line or after certain keywords)
+    lines = resume_text.split('\n')
+    name_keywords = ['name', 'candidate', 'applicant']
+    for i, line in enumerate(lines[:10]):  # Check first 10 lines
+        line = line.strip()
+        if line and len(line.split()) <= 4 and not any(char.isdigit() for char in line):
+            # Check if it doesn't contain email or phone
+            if not re.search(email_pattern, line) and not re.search(phone_pattern, line):
+                if not any(keyword.lower() in line.lower() for keyword in ['resume', 'cv', 'curriculum']):
+                    result['name'] = line
+                    break
+    
+    # Extract skills using spaCy and keyword matching
+    skill_keywords = [
+        'python', 'java', 'javascript', 'react', 'angular', 'vue', 'node.js', 'express',
+        'django', 'flask', 'spring', 'hibernate', 'sql', 'mysql', 'postgresql', 'mongodb',
+        'html', 'css', 'bootstrap', 'sass', 'less', 'jquery', 'typescript', 'php',
+        'laravel', 'symfony', 'ruby', 'rails', 'go', 'rust', 'swift', 'kotlin',
+        'android', 'ios', 'flutter', 'react native', 'xamarin', 'unity', 'c#', 'c++',
+        'machine learning', 'deep learning', 'artificial intelligence', 'data science',
+        'tensorflow', 'pytorch', 'keras', 'scikit-learn', 'pandas', 'numpy',
+        'matplotlib', 'seaborn', 'plotly', 'tableau', 'power bi', 'excel',
+        'git', 'github', 'gitlab', 'docker', 'kubernetes', 'aws', 'azure', 'gcp',
+        'jenkins', 'ci/cd', 'devops', 'linux', 'ubuntu', 'windows', 'macos',
+        'photoshop', 'illustrator', 'figma', 'sketch', 'adobe xd', 'ui/ux'
+    ]
+    
+    resume_lower = resume_text.lower()
+    found_skills = []
+    for skill in skill_keywords:
+        if skill.lower() in resume_lower:
+            found_skills.append(skill.title())
+    
+    result['skills'] = list(set(found_skills))  # Remove duplicates
+    
+    # Count pages (rough estimate based on text length)
+    text_length = len(resume_text)
+    if text_length > 3000:
+        result['no_of_pages'] = 2
+    if text_length > 6000:
+        result['no_of_pages'] = 3
+        
+    return result
+
+
+def get_video_title_from_url(link):
+    """
+    Extract a simple title from YouTube URL or return a generic title
+    """
+    try:
+        # Extract video ID from URL
+        if 'youtu.be/' in link:
+            video_id = link.split('youtu.be/')[-1].split('?')[0]
+        elif 'youtube.com/watch?v=' in link:
+            video_id = link.split('v=')[1].split('&')[0]
+        else:
+            return "Educational Video"
+        
+        # Return a generic but descriptive title
+        return f"Resume Tips & Career Guidance Video"
+    except:
+        return "Educational Video"
 
 
 def get_table_download_link(df, filename, text):
@@ -81,15 +173,16 @@ def course_recommender(course_list):
     return rec_course
 
 
-connection = pymysql.connect(host='localhost', user='root', password='')
+connection = sqlite3.connect('resume_analyzer.db', check_same_thread=False)
 cursor = connection.cursor()
 
 
 def insert_data(name, email, res_score, timestamp, no_of_pages, reco_field, cand_level, skills, recommended_skills,
                 courses):
     DB_table_name = 'user_data'
-    insert_sql = "insert into " + DB_table_name + """
-    values (0,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+    insert_sql = "INSERT INTO " + DB_table_name + """
+    (Name, Email_ID, resume_score, Timestamp, Page_no, Predicted_Field, User_level, Actual_skills, Recommended_skills, Recommended_courses)
+    VALUES (?,?,?,?,?,?,?,?,?,?)"""
     rec_values = (
     name, email, str(res_score), timestamp, str(no_of_pages), reco_field, cand_level, skills, recommended_skills,
     courses)
@@ -108,32 +201,27 @@ def run():
     st.sidebar.markdown("# Choose User")
     activities = ["Normal User", "Admin"]
     choice = st.sidebar.selectbox("Choose among the given options:", activities)
-    # link = '[©Developed by Spidy20](http://github.com/spidy20)'
+    # link = '[©Developed by Soum](http://github.com/Soumo31428)'
     # st.sidebar.markdown(link, unsafe_allow_html=True)
     img = Image.open('./Logo/SRA_Logo.jpg')
     img = img.resize((250, 250))
     st.image(img)
 
-    # Create the DB
-    db_sql = """CREATE DATABASE IF NOT EXISTS SRA;"""
-    cursor.execute(db_sql)
-    connection.select_db("sra")
-
+    # SQLite3 doesn't need database creation, just table creation
     # Create table
     DB_table_name = 'user_data'
     table_sql = "CREATE TABLE IF NOT EXISTS " + DB_table_name + """
-                    (ID INT NOT NULL AUTO_INCREMENT,
-                     Name varchar(100) NOT NULL,
-                     Email_ID VARCHAR(50) NOT NULL,
-                     resume_score VARCHAR(8) NOT NULL,
-                     Timestamp VARCHAR(50) NOT NULL,
-                     Page_no VARCHAR(5) NOT NULL,
-                     Predicted_Field VARCHAR(25) NOT NULL,
-                     User_level VARCHAR(30) NOT NULL,
-                     Actual_skills VARCHAR(300) NOT NULL,
-                     Recommended_skills VARCHAR(300) NOT NULL,
-                     Recommended_courses VARCHAR(600) NOT NULL,
-                     PRIMARY KEY (ID));
+                    (ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                     Name TEXT NOT NULL,
+                     Email_ID TEXT NOT NULL,
+                     resume_score TEXT NOT NULL,
+                     Timestamp TEXT NOT NULL,
+                     Page_no TEXT NOT NULL,
+                     Predicted_Field TEXT NOT NULL,
+                     User_level TEXT NOT NULL,
+                     Actual_skills TEXT NOT NULL,
+                     Recommended_skills TEXT NOT NULL,
+                     Recommended_courses TEXT NOT NULL);
                     """
     cursor.execute(table_sql)
     if choice == 'Normal User':
@@ -147,21 +235,28 @@ def run():
             with open(save_image_path, "wb") as f:
                 f.write(pdf_file.getbuffer())
             show_pdf(save_image_path)
-            resume_data = ResumeParser(save_image_path).get_extracted_data()
+            
+            # Use custom resume parser instead of pyresparser
+            try:
+                resume_data = custom_resume_parser(save_image_path)
+            except Exception as e:
+                st.error(f"Error parsing resume: {str(e)}")
+                resume_data = None
             if resume_data:
                 ## Get the whole resume data
                 resume_text = pdf_reader(save_image_path)
 
                 st.header("**Resume Analysis**")
-                st.success("Hello " + resume_data['name'])
+                name = resume_data.get('name', 'Unknown')
+                st.success("Hello " + name)
                 st.subheader("**Your Basic info**")
                 try:
-                    st.text('Name: ' + resume_data['name'])
-                    st.text('Email: ' + resume_data['email'])
-                    st.text('Contact: ' + resume_data['mobile_number'])
-                    st.text('Resume pages: ' + str(resume_data['no_of_pages']))
-                except:
-                    pass
+                    st.text('Name: ' + (resume_data.get('name') or 'Not found'))
+                    st.text('Email: ' + (resume_data.get('email') or 'Not found'))
+                    st.text('Contact: ' + (resume_data.get('mobile_number') or 'Not found'))
+                    st.text('Resume pages: ' + str(resume_data.get('no_of_pages', 1)))
+                except Exception as e:
+                    st.warning(f"Could not display basic info: {str(e)}")
                 cand_level = ''
                 if resume_data['no_of_pages'] == 1:
                     cand_level = "Fresher"
@@ -367,21 +462,30 @@ def run():
                     "** Note: This score is calculated based on the content that you have added in your Resume. **")
                 st.balloons()
 
-                insert_data(resume_data['name'], resume_data['email'], str(resume_score), timestamp,
-                            str(resume_data['no_of_pages']), reco_field, cand_level, str(resume_data['skills']),
-                            str(recommended_skills), str(rec_course))
+                insert_data(
+                    resume_data.get('name', 'Unknown'), 
+                    resume_data.get('email', 'Unknown'), 
+                    str(resume_score), 
+                    timestamp,
+                    str(resume_data.get('no_of_pages', 1)), 
+                    reco_field, 
+                    cand_level, 
+                    str(resume_data.get('skills', [])),
+                    str(recommended_skills), 
+                    str(rec_course)
+                )
 
                 ## Resume writing video
                 st.header("**Bonus Video for Resume Writing Tips💡**")
                 resume_vid = random.choice(resume_videos)
-                res_vid_title = fetch_yt_video(resume_vid)
+                res_vid_title = get_video_title_from_url(resume_vid)
                 st.subheader("✅ **" + res_vid_title + "**")
                 st.video(resume_vid)
 
                 ## Interview Preparation Video
                 st.header("**Bonus Video for Interview👨‍💼 Tips💡**")
                 interview_vid = random.choice(interview_videos)
-                int_vid_title = fetch_yt_video(interview_vid)
+                int_vid_title = get_video_title_from_url(interview_vid)
                 st.subheader("✅ **" + int_vid_title + "**")
                 st.video(interview_vid)
 
