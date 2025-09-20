@@ -1,0 +1,9 @@
+numpy>=1.23.0
+pdfminer3>=2018.12.3.0
+streamlit
+pandas
+plotly
+streamlit-tags
+Pillow
+nltk
+spacy>=3.4.0,<3.7.0
