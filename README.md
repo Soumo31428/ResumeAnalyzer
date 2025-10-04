@@ -20,13 +20,8 @@
    - 🧩 Role-specific Feedback  
    - 📊 Skills Gap Breakdown  
 
-2. 🎨 **AI-Powered Resume Builder:**  
-   - **Themes that Shine** (Modern, Minimal, Professional, Creative)  
-   - **Smart Content Suggestions**  
-   - **ATS-Optimized Formatting**  
-   - **Customizable Sections**  
 
-3. 🤖 **AI Optimization Engine:**  
+2. 🤖 **AI Optimization Engine:**  
    - 💡 Keyword Highlighting  
    - ✍️ Content Enhancement Tips  
    - 🌟 Industry-Specific Insights  
@@ -347,8 +342,7 @@ Join the mission! Here's how:
 
 | **Feature**                   | **Description**                                                                                 |  
 |--------------------------------|-------------------------------------------------------------------------------------------------|  
-| 🔍 **Resume Analysis**         | Get an ATS score, identify keyword gaps, and find skills to add for role alignment.             |  
-| ✨ **Customizable Templates**  | Choose from **4 sleek designs**: Modern, Minimal, Professional, Creative.                       |  
+| 🔍 **Resume Analysis**         | Get an ATS score, identify keyword gaps, and find skills to add for role alignment.             |             |  
 | 📈 **AI-Driven Insights**      | Receive smart suggestions for optimizing content, formatting, and keywords.                    |  
 | 🎯 **Role-specific Guidance**  | Tailored recommendations for matching job descriptions and standing out in applications.        |  
 
