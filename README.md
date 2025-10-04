@@ -497,21 +497,8 @@ Join the mission! Here's how:
 
 > Note: **Time Taking For scraping so have Patience**
 
-## 📄 **License**  
-
-This project is licensed under the [MIT License](https://github.com/Hunterdii/resume-analyzer-ai/blob/main/LICENSE).  
 
 
-## 🌟 **GitHub Repo**  
-
-Explore the code, contribute, or drop a <img src="https://github.com/user-attachments/assets/35f6838c-52f5-4e48-8a98-c5203f8c57e3" style="width:20px; color: #FFD700" alt="Star GIF"> : [Smart Resume AI Repository](https://github.com/Soumo31428/Smart-AI-Resume-Analyzer)  
-
-## 🛡️ Maintainer  
-
-> **_This repository is maintained by [Soumo31428](https://github.com/Soumo31428)._**  
-> Have suggestions? Feel free to reach out to [me via email](mailto:soumo.study8172@gmail.com). 📧
 
 
-## 📰 News  
-**Practice, practice, practice!** Keep working hard, and it will all fall into place. No shortcuts in this Field! 🛠️  
-> Stay curious and keep learning. 🚀
+
