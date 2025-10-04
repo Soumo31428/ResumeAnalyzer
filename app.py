@@ -28,7 +28,6 @@ from config.database import (
     get_ai_analysis_stats, reset_ai_analysis_stats, get_detailed_ai_analysis_stats
 )
 from utils.ai_resume_analyzer import AIResumeAnalyzer
-from utils.resume_builder import ResumeBuilder
 from utils.resume_analyzer import ResumeAnalyzer
 import traceback
 import plotly.express as px
@@ -48,28 +47,6 @@ st.set_page_config(
 class ResumeApp:
     def __init__(self):
         """Initialize the application"""
-        if 'form_data' not in st.session_state:
-            st.session_state.form_data = {
-                'personal_info': {
-                    'full_name': '',
-                    'email': '',
-                    'phone': '',
-                    'location': '',
-                    'linkedin': '',
-                    'portfolio': ''
-                },
-                'summary': '',
-                'experiences': [],
-                'education': [],
-                'projects': [],
-                'skills_categories': {
-                    'technical': [],
-                    'soft': [],
-                    'languages': [],
-                    'tools': []
-                }
-            }
-
         # Initialize navigation state
         if 'page' not in st.session_state:
             st.session_state.page = 'home'
@@ -81,8 +58,7 @@ class ResumeApp:
         self.pages = {
             "🏠 HOME": self.render_home,
             "🔍 RESUME ANALYZER": self.render_analyzer,
-            "📝 RESUME BUILDER": self.render_builder,
-            "📊 DASHBOARD": self.render_dashboard,
+            " DASHBOARD": self.render_dashboard,
             "🎯 JOB SEARCH": self.render_job_search,
             "💬 FEEDBACK": self.render_feedback_page,
             "ℹ️ ABOUT": self.render_about
@@ -93,7 +69,6 @@ class ResumeApp:
 
         self.analyzer = ResumeAnalyzer()
         self.ai_analyzer = AIResumeAnalyzer()
-        self.builder = ResumeBuilder()
         self.job_roles = JOB_ROLES
 
         # Initialize session state
@@ -474,7 +449,7 @@ class ResumeApp:
             # GitHub star button with lottie animation
             st.markdown("""
             <div style='display: flex; justify-content: center; align-items: center; margin-bottom: 10px;'>
-                <a href='https://github.com/Hunterdii/Smart-AI-Resume-Analyzer' target='_blank' style='text-decoration: none;'>
+                <a href='https://github.com/Soumo31428/Smart-AI-Resume-Analyzer' target='_blank' style='text-decoration: none;'>
                     <div style='display: flex; align-items: center; background-color: #24292e; padding: 5px 10px; border-radius: 5px; transition: all 0.3s ease;'>
                         <svg height="16" width="16" viewBox="0 0 16 16" version="1.1" style='margin-right: 5px;'>
                             <path fill-rule="evenodd" d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z" fill="gold"></path>
@@ -489,8 +464,8 @@ class ResumeApp:
             st.markdown("""
             <p style='text-align: center;'>
                 Powered by <b>Streamlit</b> and <b>Google Gemini AI</b> | Developed by 
-                <a href="https://www.linkedin.com/in/patel-hetkumar-sandipbhai-8b110525a/" target="_blank" style='text-decoration: none; color: #FFFFFF'>
-                    <b>Het Patel (Hunterdii)</b>
+                <a href="https://www.linkedin.com/in/souvik-chakraborty-84b26626b/" target="_blank" style='text-decoration: none; color: #FFFFFF'>
+                    <b>Soumo Chakraborty</b>
                 </a>
             </p>
             <p style='text-align: center; font-size: 12px; color: #888888;'>
@@ -547,7 +522,7 @@ class ResumeApp:
         """Render the dashboard page"""
         self.dashboard_manager.render_dashboard()
 
-        st.toast("Check out these repositories: [Awesome Hacking](https://github.com/Hunterdii/Awesome-Hacking)", icon="ℹ️")
+        st.toast("Check out my portfolio: [GitHub Profile](https://github.com/Soumo31428)", icon="ℹ️")
 
 
     def render_empty_state(self, icon, message):
@@ -574,9 +549,9 @@ class ResumeApp:
             try:
                 # Extract text from resume
                 if uploaded_file.type == "application/pdf":
-                    resume_text = extract_text_from_pdf(uploaded_file)
+                    resume_text = self.analyzer.extract_text_from_pdf(uploaded_file)
                 else:
-                    resume_text = extract_text_from_docx(uploaded_file)
+                    resume_text = self.analyzer.extract_text_from_docx(uploaded_file)
 
                 # Store resume data
                 st.session_state.resume_data = {
@@ -593,415 +568,6 @@ class ResumeApp:
                 st.error(f"Error processing resume: {str(e)}")
                 return False
         return False
-
-    def render_builder(self):
-        st.title("Resume Builder 📝")
-        st.write("Create your professional resume")
-
-        # Template selection
-        template_options = ["Modern", "Professional", "Minimal", "Creative"]
-        selected_template = st.selectbox(
-    "Select Resume Template", template_options)
-        st.success(f"🎨 Currently using: {selected_template} Template")
-
-        # Personal Information
-        st.subheader("Personal Information")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            # Get existing values from session state
-            existing_name = st.session_state.form_data['personal_info']['full_name']
-            existing_email = st.session_state.form_data['personal_info']['email']
-            existing_phone = st.session_state.form_data['personal_info']['phone']
-
-            # Input fields with existing values
-            full_name = st.text_input("Full Name", value=existing_name)
-            email = st.text_input(
-    "Email",
-    value=existing_email,
-     key="email_input")
-            phone = st.text_input("Phone", value=existing_phone)
-
-            # Immediately update session state after email input
-            if 'email_input' in st.session_state:
-                st.session_state.form_data['personal_info']['email'] = st.session_state.email_input
-
-        with col2:
-            # Get existing values from session state
-            existing_location = st.session_state.form_data['personal_info']['location']
-            existing_linkedin = st.session_state.form_data['personal_info']['linkedin']
-            existing_portfolio = st.session_state.form_data['personal_info']['portfolio']
-
-            # Input fields with existing values
-            location = st.text_input("Location", value=existing_location)
-            linkedin = st.text_input("LinkedIn URL", value=existing_linkedin)
-            portfolio = st.text_input(
-    "Portfolio Website", value=existing_portfolio)
-
-        # Update personal info in session state
-        st.session_state.form_data['personal_info'] = {
-            'full_name': full_name,
-            'email': email,
-            'phone': phone,
-            'location': location,
-            'linkedin': linkedin,
-            'portfolio': portfolio
-        }
-
-        # Professional Summary
-        st.subheader("Professional Summary")
-        summary = st.text_area("Professional Summary", value=st.session_state.form_data.get('summary', ''), height=150,
-                             help="Write a brief summary highlighting your key skills and experience")
-
-        # Experience Section
-        st.subheader("Work Experience")
-        if 'experiences' not in st.session_state.form_data:
-            st.session_state.form_data['experiences'] = []
-
-        if st.button("Add Experience"):
-            st.session_state.form_data['experiences'].append({
-                'company': '',
-                'position': '',
-                'start_date': '',
-                'end_date': '',
-                'description': '',
-                'responsibilities': [],
-                'achievements': []
-            })
-
-        for idx, exp in enumerate(st.session_state.form_data['experiences']):
-            with st.expander(f"Experience {idx + 1}", expanded=True):
-                col1, col2 = st.columns(2)
-                with col1:
-                    exp['company'] = st.text_input(
-    "Company Name",
-    key=f"company_{idx}",
-    value=exp.get(
-        'company',
-         ''))
-                    exp['position'] = st.text_input(
-    "Position", key=f"position_{idx}", value=exp.get(
-        'position', ''))
-                with col2:
-                    exp['start_date'] = st.text_input(
-    "Start Date", key=f"start_date_{idx}", value=exp.get(
-        'start_date', ''))
-                    exp['end_date'] = st.text_input(
-    "End Date", key=f"end_date_{idx}", value=exp.get(
-        'end_date', ''))
-
-                exp['description'] = st.text_area("Role Overview", key=f"desc_{idx}",
-                                                value=exp.get(
-                                                    'description', ''),
-                                                help="Brief overview of your role and impact")
-
-                # Responsibilities
-                st.markdown("##### Key Responsibilities")
-                resp_text = st.text_area("Enter responsibilities (one per line)",
-                                       key=f"resp_{idx}",
-                                       value='\n'.join(
-                                           exp.get('responsibilities', [])),
-                                       height=100,
-                                       help="List your main responsibilities, one per line")
-                exp['responsibilities'] = [r.strip()
-                                                   for r in resp_text.split('\n') if r.strip()]
-
-                # Achievements
-                st.markdown("##### Key Achievements")
-                achv_text = st.text_area("Enter achievements (one per line)",
-                                       key=f"achv_{idx}",
-                                       value='\n'.join(
-                                           exp.get('achievements', [])),
-                                       height=100,
-                                       help="List your notable achievements, one per line")
-                exp['achievements'] = [a.strip()
-                                               for a in achv_text.split('\n') if a.strip()]
-
-                if st.button("Remove Experience", key=f"remove_exp_{idx}"):
-                    st.session_state.form_data['experiences'].pop(idx)
-                    st.rerun()
-
-        # Projects Section
-        st.subheader("Projects")
-        if 'projects' not in st.session_state.form_data:
-            st.session_state.form_data['projects'] = []
-
-        if st.button("Add Project"):
-            st.session_state.form_data['projects'].append({
-                'name': '',
-                'technologies': '',
-                'description': '',
-                'responsibilities': [],
-                'achievements': [],
-                'link': ''
-            })
-
-        for idx, proj in enumerate(st.session_state.form_data['projects']):
-            with st.expander(f"Project {idx + 1}", expanded=True):
-                proj['name'] = st.text_input(
-    "Project Name",
-    key=f"proj_name_{idx}",
-    value=proj.get(
-        'name',
-         ''))
-                proj['technologies'] = st.text_input("Technologies Used", key=f"proj_tech_{idx}",
-                                                   value=proj.get(
-                                                       'technologies', ''),
-                                                   help="List the main technologies, frameworks, and tools used")
-
-                proj['description'] = st.text_area("Project Overview", key=f"proj_desc_{idx}",
-                                                 value=proj.get(
-                                                     'description', ''),
-                                                 help="Brief overview of the project and its goals")
-
-                # Project Responsibilities
-                st.markdown("##### Key Responsibilities")
-                proj_resp_text = st.text_area("Enter responsibilities (one per line)",
-                                            key=f"proj_resp_{idx}",
-                                            value='\n'.join(
-                                                proj.get('responsibilities', [])),
-                                            height=100,
-                                            help="List your main responsibilities in the project")
-                proj['responsibilities'] = [r.strip()
-                                                    for r in proj_resp_text.split('\n') if r.strip()]
-
-                # Project Achievements
-                st.markdown("##### Key Achievements")
-                proj_achv_text = st.text_area("Enter achievements (one per line)",
-                                            key=f"proj_achv_{idx}",
-                                            value='\n'.join(
-                                                proj.get('achievements', [])),
-                                            height=100,
-                                            help="List the project's key achievements and your contributions")
-                proj['achievements'] = [a.strip()
-                                                for a in proj_achv_text.split('\n') if a.strip()]
-
-                proj['link'] = st.text_input("Project Link (optional)", key=f"proj_link_{idx}",
-                                           value=proj.get('link', ''),
-                                           help="Link to the project repository, demo, or documentation")
-
-                if st.button("Remove Project", key=f"remove_proj_{idx}"):
-                    st.session_state.form_data['projects'].pop(idx)
-                    st.rerun()
-
-        # Education Section
-        st.subheader("Education")
-        if 'education' not in st.session_state.form_data:
-            st.session_state.form_data['education'] = []
-
-        if st.button("Add Education"):
-            st.session_state.form_data['education'].append({
-                'school': '',
-                'degree': '',
-                'field': '',
-                'graduation_date': '',
-                'gpa': '',
-                'achievements': []
-            })
-
-        for idx, edu in enumerate(st.session_state.form_data['education']):
-            with st.expander(f"Education {idx + 1}", expanded=True):
-                col1, col2 = st.columns(2)
-                with col1:
-                    edu['school'] = st.text_input(
-    "School/University",
-    key=f"school_{idx}",
-    value=edu.get(
-        'school',
-         ''))
-                    edu['degree'] = st.text_input(
-    "Degree", key=f"degree_{idx}", value=edu.get(
-        'degree', ''))
-                with col2:
-                    edu['field'] = st.text_input(
-    "Field of Study",
-    key=f"field_{idx}",
-    value=edu.get(
-        'field',
-         ''))
-                    edu['graduation_date'] = st.text_input("Graduation Date", key=f"grad_date_{idx}",
-                                                         value=edu.get('graduation_date', ''))
-
-                edu['gpa'] = st.text_input(
-    "GPA (optional)",
-    key=f"gpa_{idx}",
-    value=edu.get(
-        'gpa',
-         ''))
-
-                # Educational Achievements
-                st.markdown("##### Achievements & Activities")
-                edu_achv_text = st.text_area("Enter achievements (one per line)",
-                                           key=f"edu_achv_{idx}",
-                                           value='\n'.join(
-                                               edu.get('achievements', [])),
-                                           height=100,
-                                           help="List academic achievements, relevant coursework, or activities")
-                edu['achievements'] = [a.strip()
-                                               for a in edu_achv_text.split('\n') if a.strip()]
-
-                if st.button("Remove Education", key=f"remove_edu_{idx}"):
-                    st.session_state.form_data['education'].pop(idx)
-                    st.rerun()
-
-        # Skills Section
-        st.subheader("Skills")
-        if 'skills_categories' not in st.session_state.form_data:
-            st.session_state.form_data['skills_categories'] = {
-                'technical': [],
-                'soft': [],
-                'languages': [],
-                'tools': []
-            }
-
-        col1, col2 = st.columns(2)
-        with col1:
-            tech_skills = st.text_area("Technical Skills (one per line)",
-                                     value='\n'.join(
-    st.session_state.form_data['skills_categories']['technical']),
-                                     height=150,
-                                     help="Programming languages, frameworks, databases, etc.")
-            st.session_state.form_data['skills_categories']['technical'] = [
-                s.strip() for s in tech_skills.split('\n') if s.strip()]
-
-            soft_skills = st.text_area("Soft Skills (one per line)",
-                                     value='\n'.join(
-    st.session_state.form_data['skills_categories']['soft']),
-                                     height=150,
-                                     help="Leadership, communication, problem-solving, etc.")
-            st.session_state.form_data['skills_categories']['soft'] = [
-                s.strip() for s in soft_skills.split('\n') if s.strip()]
-
-        with col2:
-            languages = st.text_area("Languages (one per line)",
-                                   value='\n'.join(
-    st.session_state.form_data['skills_categories']['languages']),
-                                   height=150,
-                                   help="Programming or human languages with proficiency level")
-            st.session_state.form_data['skills_categories']['languages'] = [
-                l.strip() for l in languages.split('\n') if l.strip()]
-
-            tools = st.text_area("Tools & Technologies (one per line)",
-                               value='\n'.join(
-    st.session_state.form_data['skills_categories']['tools']),
-                               height=150,
-                               help="Development tools, software, platforms, etc.")
-            st.session_state.form_data['skills_categories']['tools'] = [
-                t.strip() for t in tools.split('\n') if t.strip()]
-
-        # Update form data in session state
-        st.session_state.form_data.update({
-            'summary': summary
-        })
-
-        # Generate Resume button
-        if st.button("Generate Resume 📄", type="primary"):
-            print("Validating form data...")
-            print(f"Session state form data: {st.session_state.form_data}")
-            print(
-    f"Email input value: {
-        st.session_state.get(
-            'email_input',
-             '')}")
-
-            # Get the current values from form
-            current_name = st.session_state.form_data['personal_info']['full_name'].strip(
-            )
-            current_email = st.session_state.email_input if 'email_input' in st.session_state else ''
-
-            print(f"Current name: {current_name}")
-            print(f"Current email: {current_email}")
-
-            # Validate required fields
-            if not current_name:
-                st.error("⚠️ Please enter your full name.")
-                return
-
-            if not current_email:
-                st.error("⚠️ Please enter your email address.")
-                return
-
-            # Update email in form data one final time
-            st.session_state.form_data['personal_info']['email'] = current_email
-
-            try:
-                print("Preparing resume data...")
-                # Prepare resume data with current form values
-                resume_data = {
-                    "personal_info": st.session_state.form_data['personal_info'],
-                    "summary": st.session_state.form_data.get('summary', '').strip(),
-                    "experience": st.session_state.form_data.get('experiences', []),
-                    "education": st.session_state.form_data.get('education', []),
-                    "projects": st.session_state.form_data.get('projects', []),
-                    "skills": st.session_state.form_data.get('skills_categories', {
-                        'technical': [],
-                        'soft': [],
-                        'languages': [],
-                        'tools': []
-                    }),
-                    "template": selected_template
-                }
-
-                print(f"Resume data prepared: {resume_data}")
-
-                try:
-                    # Generate resume
-                    resume_buffer = self.builder.generate_resume(resume_data)
-                    if resume_buffer:
-                        try:
-                            # Save resume data to database
-                            save_resume_data(resume_data)
-
-                            # Offer the resume for download
-                            st.success("✅ Resume generated successfully!")
-
-                            # Show snowflake effect
-                            st.snow()
-
-                            st.download_button(
-                                label="Download Resume 📥",
-                                data=resume_buffer,
-                                file_name=f"{
-    current_name.replace(
-        ' ', '_')}_resume.docx",
-                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                on_click=lambda: st.balloons()
-                            )
-                        except Exception as db_error:
-                            print(
-    f"Warning: Failed to save to database: {
-        str(db_error)}")
-                            # Still allow download even if database save fails
-                            st.warning(
-                                "⚠️ Resume generated but couldn't be saved to database")
-                            
-                            # Show balloons effect
-                            st.balloons()
-
-                            st.download_button(
-                                label="Download Resume 📥",
-                                data=resume_buffer,
-                                file_name=f"{
-    current_name.replace(
-        ' ', '_')}_resume.docx",
-                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                on_click=lambda: st.balloons()
-                            )
-                    else:
-                        st.error(
-                            "❌ Failed to generate resume. Please try again.")
-                        print("Resume buffer was None")
-                except Exception as gen_error:
-                    print(f"Error during resume generation: {str(gen_error)}")
-                    print(f"Full traceback: {traceback.format_exc()}")
-                    st.error(f"❌ Error generating resume: {str(gen_error)}")
-
-            except Exception as e:
-                print(f"Error preparing resume data: {str(e)}")
-                print(f"Full traceback: {traceback.format_exc()}")
-                st.error(f"❌ Error preparing resume data: {str(e)}")
-
-        st.toast("Check out these repositories: [30-Days-Of-Rust](https://github.com/Hunterdii/30-Days-Of-Rust)", icon="ℹ️")
 
     def render_about(self):
         """Render the about page"""
@@ -1164,26 +730,26 @@ class ResumeApp:
         # Profile Section
         st.markdown(f"""
             <div class="profile-section">
-                <img src="{image_base64 if image_base64 else 'https://avatars.githubusercontent.com/Hunterdii'}"
-                     alt="Het Patel"
+                <img src="{image_base64 if image_base64 else 'https://avatars.githubusercontent.com/Soumo31428'}"
+                     alt="Soumo Chakraborty"
                      class="profile-image"
-                     onerror="this.onerror=null; this.src='https://avatars.githubusercontent.com/Hunterdii';">
-                <h2 class="profile-name">Het Patel (Hunterdii)</h2>
+                     onerror="this.onerror=null; this.src='https://avatars.githubusercontent.com/Soumo31428';">
+                <h2 class="profile-name">Soumo Chakraborty</h2>
                 <p class="profile-title">Full Stack Developer & AI/ML Enthusiast</p>
                 <div class="social-links">
-                    <a href="https://github.com/Hunterdii" class="social-link" target="_blank">
+                    <a href="https://github.com/Soumo31428" class="social-link" target="_blank">
                         <i class="fab fa-github"></i>
                     </a>
-                    <a href="https://www.linkedin.com/in/patel-hetkumar-sandipbhai-8b110525a/" class="social-link" target="_blank">
+                    <a href="https://www.linkedin.com/in/souvik-chakraborty-84b26626b/" class="social-link" target="_blank">
                         <i class="fab fa-linkedin"></i>
                     </a>
-                    <a href="mailto:hunterdii9879@gmail.com" class="social-link" target="_blank">
+                    <a href="mailto:soumo.study8172@gmail.com" class="social-link" target="_blank">
                         <i class="fas fa-envelope"></i>
                     </a>
                 </div>
                 <p class="bio-text">
                     Hello! I'm a passionate Full Stack Developer with expertise in AI and Machine Learning.
-                    I created Smart Resume AI to revolutionize how job seekers approach their career journey.
+                    I developed Smart Resume AI to revolutionize how job seekers approach their career journey.
                     With my background in both software development and AI, I've designed this platform to
                     provide intelligent, data-driven insights for resume optimization.
                 </p>
@@ -1239,7 +805,7 @@ class ResumeApp:
             </div>
         """, unsafe_allow_html=True)
 
-        st.toast("Check out these repositories: [Iriswise](https://github.com/Hunterdii/Iriswise)", icon="ℹ️")
+        st.toast("Check out my portfolio: [GitHub Profile](https://github.com/Soumo31428)", icon="ℹ️")
 
     def render_analyzer(self):
         """Render the resume analyzer page"""
@@ -1415,9 +981,7 @@ class ResumeApp:
 
                         # Show results based on document type
                         if analysis.get('document_type') != 'resume':
-                            st.error(
-    f"⚠️ This appears to be a {
-        analysis['document_type']} document, not a resume!")
+                            st.error(f"⚠️ This appears to be a {analysis['document_type']} document, not a resume!")
                             st.warning(
                                 "Please upload a proper resume for ATS analysis.")
                             return
@@ -2798,7 +2362,7 @@ class ResumeApp:
                             import traceback as tb
                             st.code(tb.format_exc())
 
-        st.toast("Check out these repositories: [Awesome Java](https://github.com/Hunterdii/Awesome-Java)", icon="ℹ️")
+        st.toast("Check out my portfolio: [GitHub Profile](https://github.com/Soumo31428)", icon="ℹ️")
 
 
     def render_home(self):
@@ -2820,12 +2384,6 @@ class ResumeApp:
         )
         
         feature_card(
-            "fas fa-magic",
-            "Smart Resume Builder",
-            "Create professional resumes with our intelligent builder that suggests optimal content and formatting."
-        )
-        
-        feature_card(
             "fas fa-chart-line",
             "Career Insights",
             "Access detailed analytics and personalized recommendations to enhance your career prospects."
@@ -2833,7 +2391,7 @@ class ResumeApp:
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        st.toast("Check out these repositories: [AI-Nexus(AI/ML)](https://github.com/Hunterdii/AI-Nexus)", icon="ℹ️")
+        st.toast("Check out my portfolio: [GitHub Profile](https://github.com/Soumo31428)", icon="ℹ️")
 
         # Call-to-Action with Streamlit navigation
         col1, col2, col3 = st.columns([1, 1, 1])
@@ -2850,7 +2408,7 @@ class ResumeApp:
         """Render the job search page"""
         render_job_search()
 
-        st.toast("Check out these repositories: [GeeksforGeeks-POTD](https://github.com/Hunterdii/GeeksforGeeks-POTD)", icon="ℹ️")
+        st.toast("Check out my portfolio: [GitHub Profile](https://github.com/Soumo31428)", icon="ℹ️")
 
 
     def render_feedback_page(self):
@@ -2875,31 +2433,22 @@ class ResumeApp:
         with stats_tab:
             feedback_manager.render_feedback_stats()
 
-        st.toast("Check out these repositories: [TryHackMe Free Rooms](https://github.com/Hunterdii/tryhackme-free-rooms)", icon="ℹ️")
+        st.toast("Check out my portfolio: [GitHub Profile](https://github.com/Soumo31428)", icon="ℹ️")
 
 
     def show_repo_notification(self):
         message = """
 <div style="background-color: #1e1e1e; border-radius: 10px; border: 1px solid #4b6cb7; padding: 10px; margin: 10px 0; color: white;">
-    <div style="margin-bottom: 10px;">Check out these other repositories:</div>
-    <div style="margin-bottom: 5px;"><b>Hacking Resources:</b></div>
+    <div style="margin-bottom: 10px;">Check out my GitHub profile:</div>
+    <div style="margin-bottom: 5px;"><b>Portfolio:</b></div>
     <ul style="margin-top: 0; padding-left: 20px;">
-        <li><a href="https://github.com/Hunterdii/tryhackme-free-rooms" target="_blank" style="color: #4CAF50;">TryHackMe Free Rooms</a></li>
-        <li><a href="https://github.com/Hunterdii/Awesome-Hacking" target="_blank" style="color: #4CAF50;">Awesome Hacking</a></li>
+        <li><a href="https://github.com/Soumo31428" target="_blank" style="color: #4CAF50;">GitHub Profile</a></li>
+        <li><a href="https://github.com/Soumo31428/Smart-AI-Resume-Analyzer" target="_blank" style="color: #4CAF50;">This Project Repository</a></li>
     </ul>
-    <div style="margin-bottom: 5px;"><b>Programming Languages:</b></div>
+    <div style="margin-bottom: 5px;"><b>Connect with me:</b></div>
     <ul style="margin-top: 0; padding-left: 20px;">
-        <li><a href="https://github.com/Hunterdii/Awesome-Java" target="_blank" style="color: #4CAF50;">Awesome Java</a></li>
-        <li><a href="https://github.com/Hunterdii/30-Days-Of-Rust" target="_blank" style="color: #4CAF50;">30 Days Of Rust</a></li>
-    </ul>
-    <div style="margin-bottom: 5px;"><b>Data Structures & Algorithms:</b></div>
-    <ul style="margin-top: 0; padding-left: 20px;">
-        <li><a href="https://github.com/Hunterdii/GeeksforGeeks-POTD" target="_blank" style="color: #4CAF50;">GeeksforGeeks POTD</a></li>
-        <li><a href="https://github.com/Hunterdii/Leetcode-POTD" target="_blank" style="color: #4CAF50;">Leetcode POTD</a></li>
-    </ul>
-    <div style="margin-bottom: 5px;"><b>AI/ML Projects:</b></div>
-    <ul style="margin-top: 0; padding-left: 20px;">
-        <li><a href="https://github.com/Hunterdii/AI-Nexus" target="_blank" style="color: #4CAF50;">AI Nexus</a></li>
+        <li><a href="https://www.linkedin.com/in/souvik-chakraborty-84b26626b/" target="_blank" style="color: #4CAF50;">LinkedIn Profile</a></li>
+        <li><a href="mailto:soumo.study8172@gmail.com" target="_blank" style="color: #4CAF50;">Email Me</a></li>
     </ul>
     <div style="margin-top: 10px;">If you find this project helpful, please consider ⭐ starring the repo!</div>
 </div>

@@ -82,6 +82,14 @@ def init_database():
     )
     ''')
     
+    # Add default admin user if table is empty
+    cursor.execute('SELECT COUNT(*) FROM admin')
+    admin_count = cursor.fetchone()[0]
+    
+    if admin_count == 0:
+        cursor.execute('INSERT INTO admin (email, password) VALUES (?, ?)', 
+                      ('admin@example.com', 'admin123'))
+    
     conn.commit()
     conn.close()
 
