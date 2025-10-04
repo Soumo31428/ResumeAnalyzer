@@ -84,13 +84,7 @@ Get real-time feedback, boost your resume's impact, and maximize your chances of
 2. **Analyze Your Resume**  
    - **ATS Compatibility**: Ensure your resume meets recruiter expectations.  
    - **Keyword Insights**: Find and fill gaps in your content.  
-   - **Skills Gap Analysis**: Discover key skills missing for your target role.  
-
-3. **Build a Stunning Resume**  
-   - Select from **4 unique templates** and customize sections like skills, achievements, or hobbies.  
-
-4. **Download & Apply**  
-   - Export your resume in **PDF** format, ready for submission.  This project has evolved with significant enhancements to its resume analysis capabilities:
+   - **Skills Gap Analysis**: Discover key skills missing for your target role.    
 
 
 Follow these steps to run Smart Resume AI:  
